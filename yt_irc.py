@@ -1,20 +1,8 @@
 import argparse
-import glob
+import re
 
 import os
 import sys
-
-'''
-glob instead of grep
-
-add IF to check if the file name matches the excludes
-and the logic for opening the file and getting the links
-
-probably better to give it the dir instead of req it to be a certain dir
-
-
-
-'''
 
 # Create the parser
 my_parser = argparse.ArgumentParser(prog='yt_irc',
@@ -43,36 +31,54 @@ if not os.path.isdir(input_path):
     print('The path specified does not exist')
     sys.exit()
 
-# store all available dir into list
-dir_list = [f for f in os.listdir(input_path) if os.path.isdir( os.path.join(input_path,f))]
+# get absolute file paths to each chatroom log file
+chatroom_paths = []
+chatroom_count = 0
+for server_log_dir in os.listdir(input_path):
 
+    serverlog_path = os.path.join(input_path,server_log_dir)
+    if os.path.isdir(serverlog_path):
 
-chatroom_list = []
+        # dump individual files into list
+        for chatlog_file in os.listdir(serverlog_path):
+            chatroom_path = os.path.join(serverlog_path, chatlog_file)
+            chatroom_paths.append(chatroom_path)
 
-for dir in dir_list:
-    for f in os.listdir(os.path.join(input_path, dir)):
-        chatroom_list.append(os.path.join(dir, f))
+            print(chatroom_count, chatroom_path)
+            chatroom_count += 1
 
-for f in chatroom_list:
-    print(chatroom_list.index(f), f)
-
+# ask user for exclusions
 while True:
     user_choice = input("\nEnter server name to exclude from playlist (-1 when finished): ")
+
     if int(user_choice) == -1:
         break
 
-    if int(user_choice) > -1: chatroom_list.pop(int(user_choice))
+    if int(user_choice) > -1:
+        chatroom_paths.pop(int(user_choice))
 
-    for f in chatroom_list:
-        print(chatroom_list.index(f), f)
+    # relist out selections for exclusions
+    for count, f in enumerate(chatroom_paths):
+        print(count, f)
 
 fullpath_chatroom_list = []
 
-for f in chatroom_list:
-    new_path = os.path.join(input_path, f)
+for chatlog_file in chatroom_paths:
+    new_path = os.path.join(input_path, chatlog_file)
     fullpath_chatroom_list.append(new_path)
 
 for f in fullpath_chatroom_list:
     print(f)
 
-#print(input_path.insert(user_choice))
+pattern = re.compile("http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?")
+
+matches = []
+
+for file in fullpath_chatroom_list:
+    with open(file, 'r') as reader:
+        datafile = reader.read()
+        matches.append(re.findall(pattern, datafile))
+        #print (matches)
+
+print(matches)
+# youtube_ids = [match[0] for match in matches]
