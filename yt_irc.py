@@ -49,7 +49,7 @@ for server_log_dir in os.listdir(input_path):
 
 # ask user for exclusions
 while True:
-    user_choice = input("\nEnter server name to exclude from playlist (-1 when finished): ")
+    user_choice = input("\nEnter index to exclude from playlist (-1 when finished): ")
 
     if int(user_choice) == -1:
         break
@@ -61,24 +61,18 @@ while True:
     for count, f in enumerate(chatroom_paths):
         print(count, f)
 
-fullpath_chatroom_list = []
-
-for chatlog_file in chatroom_paths:
-    new_path = os.path.join(input_path, chatlog_file)
-    fullpath_chatroom_list.append(new_path)
-
-for f in fullpath_chatroom_list:
-    print(f)
-
 pattern = re.compile("http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?")
 
-matches = []
+youtube_ids = []
 
-for file in fullpath_chatroom_list:
-    with open(file, 'r') as reader:
-        datafile = reader.read()
-        matches.append(re.findall(pattern, datafile))
-        #print (matches)
+for chatroom_path in chatroom_paths:
+    with open(chatroom_path, 'r') as fp:
+        chatroom_log_text = fp.read()
+        matches = re.findall(pattern, chatroom_log_text)
+        for match in matches:
+            youtube_id = match[0]
+            if youtube_id:
+                youtube_ids.append(youtube_id)
 
-print(matches)
+print(youtube_ids)
 # youtube_ids = [match[0] for match in matches]
