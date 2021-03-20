@@ -4,6 +4,24 @@ import re
 import os
 import sys
 
+'''
+produce markdown files that contain:
+
+- youtube embed link
+- <server> <#chat> <date> <user> <link> (jekyll categories)
+
+Regex to pull server, chat, date, user, etc
+
+change to run om servers individually instead of having user do stuff for website
+
+ninite?
+'''
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 # Create the parser
 my_parser = argparse.ArgumentParser(prog='yt_irc',
                                     usage='%(prog)s [option] PATH',
@@ -74,5 +92,14 @@ for chatroom_path in chatroom_paths:
             if youtube_id:
                 youtube_ids.append(youtube_id)
 
-print(youtube_ids)
-# youtube_ids = [match[0] for match in matches]
+list_of_lists = [[]] * int((len(youtube_ids) / 50))
+
+# print(list_of_lists)
+list_of_lists = chunks(youtube_ids, 50)
+
+for list in list_of_lists:
+    csv_youtube_id = ','.join(list)
+    playlist_url = "https://www.youtube.com/watch_videos?video_ids=" + csv_youtube_id
+    print(playlist_url)
+
+
