@@ -1,4 +1,5 @@
 import argparse
+import glob
 
 import os
 import sys
@@ -26,7 +27,7 @@ my_parser.version = '0.1'
 my_parser.add_argument('Path',
                        metavar='PATH',
                        type=str,
-                       help='provide path to .thelounge/logs')
+                       help='provide path to .thelounge/logs/user')
 
 my_parser.add_argument('-v',
                        '--version',
@@ -45,13 +46,33 @@ if not os.path.isdir(input_path):
 # store all available dir into list
 dir_list = [f for f in os.listdir(input_path) if os.path.isdir( os.path.join(input_path,f))]
 
-# show index with available dir
-print("\nIndex\t Directory")
-print("-----\t ---------")
+
+chatroom_list = []
 
 for dir in dir_list:
-    print(dir_list.index(dir),'\t', dir)
+    for f in os.listdir(os.path.join(input_path, dir)):
+        chatroom_list.append(os.path.join(dir, f))
 
-user_choice = input("\nSelect user by index: ")
+for f in chatroom_list:
+    print(chatroom_list.index(f), f)
 
-print(input_path.insert(user_choice))
+while True:
+    user_choice = input("\nEnter server name to exclude from playlist (-1 when finished): ")
+    if int(user_choice) == -1:
+        break
+
+    if int(user_choice) > -1: chatroom_list.pop(int(user_choice))
+
+    for f in chatroom_list:
+        print(chatroom_list.index(f), f)
+
+fullpath_chatroom_list = []
+
+for f in chatroom_list:
+    new_path = os.path.join(input_path, f)
+    fullpath_chatroom_list.append(new_path)
+
+for f in fullpath_chatroom_list:
+    print(f)
+
+#print(input_path.insert(user_choice))
