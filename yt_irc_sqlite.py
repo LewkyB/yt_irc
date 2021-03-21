@@ -1,7 +1,8 @@
 import argparse
 import re
-import sqlite3
 
+import sqlite3
+import time
 import datetime
 
 import os
@@ -30,13 +31,14 @@ my_parser = argparse.ArgumentParser(prog='yt_irc',
                                     usage='%(prog)s [option] PATH',
                                     description='description: parse IRC logs for youtube links then form into playlist(s)')
 
-my_parser.version = '0.1'
+# 0.2 d/t use of sqlite instead of parsing plaintext logs
+my_parser.version = '0.2'
 
 # Add the arguments
 my_parser.add_argument('Path',
                        metavar='PATH',
                        type=str,
-                       help='provide path to .thelounge/logs/user')
+                       help='provide path to sqlite3 file: /home/user/.thelounge/logs/user.sqlite3')
 
 my_parser.add_argument('-v',
                        '--version',
@@ -48,10 +50,37 @@ args = my_parser.parse_args()
 
 input_path = args.Path
 
-if not os.path.isdir(input_path):
+if not os.path.isfile(input_path):
     print('The path specified does not exist')
     sys.exit()
 
+
+con  = sqlite3.connect(input_path)
+
+youtube_ids = []
+
+pattern = re.compile("http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?")
+
+youtube_ids = []
+start = datetime.datetime.now()
+for row in con.execute("SELECT msg FROM messages WHERE msg LIKE '%youtu%'"):
+    matches = re.findall(pattern, row[0])
+    print(matches)
+    for match in matches:
+        youtube_id = match[0]
+        if youtube_id:
+            youtube_ids.append(youtube_id)
+for x in youtube_ids:
+    print(x)
+
+print(len(youtube_ids))
+end = datetime.datetime.now()
+
+# print query benchmark
+print(end - start)
+
+
+'''
 # get absolute file paths to each chatroom log file
 chatroom_paths = []
 chatroom_count = 0
@@ -118,3 +147,5 @@ for fifty_youtube_ids in list_of_lists:
     comma_seperated_youtube_ids = ','.join(fifty_youtube_ids)
     playlist_url = "https://www.youtube.com/watch_videos?video_ids=" + comma_seperated_youtube_ids
     print(playlist_url, '\n')
+
+'''
