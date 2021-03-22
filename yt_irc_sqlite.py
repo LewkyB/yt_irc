@@ -13,16 +13,21 @@ import json
 def get_command_line_args():
     
     my_parser = argparse.ArgumentParser(prog='yt_irc',
-                                        usage='%(prog)s [option] PATH',
-                                        description='description: parse IRC logs for youtube links then form into playlist(s)')
+                                        usage='%(prog)s [option] path/to/sqlite path/to/user/json',
+                                        description='description: parse IRC logs for server, channel, user, youtube links and output json')
 
     # 0.2 d/t use of sqlite instead of parsing plaintext logs
     my_parser.version = '0.2'
 
-    my_parser.add_argument('Path',
-                           metavar='PATH',
+    my_parser.add_argument('sqlite_path',
+                           metavar='sqlite_path',
                            type=str,
                            help='provide path to sqlite3 file: /home/user/.thelounge/logs/user.sqlite3')
+
+    my_parser.add_argument('json_path',
+                           metavar='json_path',
+                           type=str,
+                           help='provide path to user json file: /home/user/.thelounge/users/user.json')
 
     my_parser.add_argument('-v',
                            '--version',
@@ -32,13 +37,18 @@ def get_command_line_args():
     # Execute the parse_args() method
     args = my_parser.parse_args()
 
-    input_path = args.Path
+    sqlite_input_path = args.sqlite_path
+    json_input_path = args.json_path
 
-    if not os.path.isfile(input_path):
-        print('The path specified does not exist')
+    if not os.path.isfile(sqlite_input_path):
+        print('The sqlite path specified does not exist')
+        sys.exit()
+    
+    if not os.path.isfile(json_input_path):
+        print('The json path specified does not exist')
         sys.exit()
         
-    return input_path
+    return sqlite_input_path, json_input_path
 
 
 def read_sqlite_file(path_to_sqlite3_file):
@@ -56,9 +66,6 @@ def read_sqlite_file(path_to_sqlite3_file):
         "c5df9b7b-3ad4-4091-aac1-7cc20933931e" : "irc.darkscience.net",
         "5d86b716-20da-4ca5-9abc-cdf15c8a6916" : "travincal.snoonet.org"
     }
-
-    # start benchmark
-    start = datetime.datetime.now()
 
     # parse data from each row into a json file
     for row in con.execute("SELECT network, channel, time, msg FROM messages WHERE msg LIKE '%youtu%'"):
@@ -84,26 +91,52 @@ def read_sqlite_file(path_to_sqlite3_file):
             'embedded_video_url' : youtube_embedded_url 
         }
         youtube_dict.append(youtube_link_info)
-
-
-
-    # end benchmark
-    end = datetime.datetime.now()
-
-    for x in youtube_dict:
-       print(x)
     
-    # print query benchmark
-    print(end - start)
-    
-    with open("sample.json", "w") as fp:
+    with open("irc_info_and_links.json", "w") as fp:
         json.dump(youtube_dict, fp, indent=4)
 
-def main():
 
-    input_path = get_command_line_args()
-    
-    read_sqlite_file(input_path)
+# read only servers and chatrooms from user's json file
+def read_user_json(path_to_user_json):
+
+    # dictionary to be converted into json file with only server names and channels
+    json_server_channel_info = []
+
+    with open(path_to_user_json) as fp:
+        user_json = json.load(fp) 
+
+        for networks in user_json['networks']:
+
+            network_host_name = networks['name']
+            network_host_address = networks['host']
+            
+            channel_list = []
+
+            for channels in networks['channels']:
+
+                # private messages excluded by requiring # as first character of channel name
+                if channels and channels['name'][0] == '#':
+                    
+                    channel_name = channels['name']
+                    channel_list.append(channel_name)
+                    
+            json_network_info = {
+                'network_name' : network_host_name,
+                'network_address' : network_host_address,
+                'channel_list' : channel_list  
+            }
+            json_server_channel_info.append(json_network_info)
+
+    # write json file out to current directory
+    with open("server_channel_info.json", "w") as fp:
+        json.dump(json_server_channel_info, fp, indent=4)
+
+
+def main():
+    sqlite_path, user_json_path = get_command_line_args()
+
+    read_sqlite_file(sqlite_path)
+    read_user_json(user_json_path)
 
 main()
 
