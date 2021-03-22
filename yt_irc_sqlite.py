@@ -4,6 +4,7 @@ import re
 import sqlite3
 import time
 import datetime
+import json
 
 import os
 import sys
@@ -20,6 +21,7 @@ change to run om servers individually instead of having user do stuff for websit
 
 ninite?
 '''
+
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -56,24 +58,42 @@ if not os.path.isfile(input_path):
 
 
 con  = sqlite3.connect(input_path)
-
-youtube_ids = []
-
 pattern = re.compile("http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?")
 
-youtube_ids = []
-start = datetime.datetime.now()
-for row in con.execute("SELECT msg FROM messages WHERE msg LIKE '%youtu%'"):
-    matches = re.findall(pattern, row[0])
-    print(matches)
-    for match in matches:
-        youtube_id = match[0]
-        if youtube_id:
-            youtube_ids.append(youtube_id)
-for x in youtube_ids:
-    print(x)
+youtube_dict = []
 
-print(len(youtube_ids))
+servername_options = {
+    "fcad4ce3-f2a6-41ce-9ac9-0cfcd9a47552" : "chat.freenode.net",
+    "c5df9b7b-3ad4-4091-aac1-7cc20933931e" : "irc.darkscience.net",
+    "5d86b716-20da-4ca5-9abc-cdf15c8a6916" : "travincal.snoonet.org"
+}
+
+start = datetime.datetime.now()
+for row in con.execute("SELECT network, channel, time, msg FROM messages WHERE msg LIKE '%youtu%'"):
+    
+    msg = json.loads(row[3])
+    match = re.findall(pattern, msg['text'])
+
+    if not match: continue
+    
+    server_name = servername_options[row[0]]
+    channel = row[1]
+    server_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(row[2]/1000))
+    nickname = msg['from']['nick']
+    
+
+    youtube_link_info = {
+        'server' : server_name,
+        'chatroom' : channel,
+        'date' : server_time,
+        'nick' : nickname,
+        'youtube_id' : match[0][0]
+    }
+    youtube_dict.append(youtube_link_info)
+
+
+print(len(youtube_dict))
+
 end = datetime.datetime.now()
 
 # print query benchmark
