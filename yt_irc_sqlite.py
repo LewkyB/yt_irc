@@ -92,8 +92,12 @@ def read_sqlite_file(path_to_sqlite3_file):
         }
         youtube_dict.append(youtube_link_info)
     
-    with open("irc_info_and_links.json", "w") as fp:
+    # output json file
+    json_output_filename = "irc_info_and_links.json"
+    with open(json_output_filename, "w") as fp:
         json.dump(youtube_dict, fp, indent=4)
+
+    return os.path.abspath(json_output_filename)
 
 
 # read only servers and chatrooms from user's json file
@@ -132,11 +136,20 @@ def read_user_json(path_to_user_json):
         json.dump(json_server_channel_info, fp, indent=4)
 
 
+def count_links_per_chatroom(json_path):
+    with open(json_path, "r") as fp:
+        sqlite_output_json = json.load(fp)
+
+
+
+
 def main():
     sqlite_path, user_json_path = get_command_line_args()
 
-    read_sqlite_file(sqlite_path)
+    sqlite_output_json = read_sqlite_file(sqlite_path)
+    count_links_per_chatroom(sqlite_output_json)
     read_user_json(user_json_path)
+
 
 main()
 
